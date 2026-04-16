@@ -6,6 +6,4 @@ COPY . .
 
 RUN npm install
 
-RUN chmod +x entrypoint.sh
-
-CMD ["sh", "entrypoint.sh"]
+CMD ["node", "index.js"]
