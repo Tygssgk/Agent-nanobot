@@ -1,0 +1,22 @@
+# ============================================
+# Nanobot Core Dependencies
+# (keep existing ones from the repo)
+# ============================================
+
+# LiteLLM - Load Balancing & Proxy
+litellm[proxy]>=1.40.0
+
+# Telegram Bot
+python-telegram-bot>=20.7
+
+# HTTP Client
+aiohttp>=3.9.0
+httpx>=0.25.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0
+requests>=2.31.0
+
+# Optional: Monitoring
+# langfuse>=2.0.0

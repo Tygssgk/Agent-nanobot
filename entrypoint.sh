@@ -1,17 +1,15 @@
-
 #!/bin/sh
+dir="$HOME/.nanobot"
+if [ -d "$dir" ] && [ ! -w "$dir" ]; then
+    owner_uid=$(stat -c %u "$dir" 2>/dev/null || stat -f %u "$dir" 2>/dev/null)
+    cat >&2 <<EOF
+Error: $dir is not writable (owned by UID $owner_uid, running as UID $(id -u)).
 
-if [ -z "$LITELLM_MASTER_KEY" ]; then
-  echo "ERROR: Missing LITELLM_MASTER_KEY"
-  exit 1
+Fix (pick one):
+  Host:   sudo chown -R 1000:1000 ~/.nanobot
+  Docker: docker run --user \$(id -u):\$(id -g) ...
+  Podman: podman run --userns=keep-id ...
+EOF
+    exit 1
 fi
-
-if [ -z "$LITELLM_PROXY_URL" ]; then
-  echo "ERROR: Missing LITELLM_PROXY_URL"
-  exit 1
-fi
-
-sed -i "s|${LITELLM_MASTER_KEY}|$LITELLM_MASTER_KEY|g" /app/config.json
-sed -i "s|${LITELLM_PROXY_URL}|$LITELLM_PROXY_URL|g" /app/config.json
-
-node dist/server.js
+exec nanobot "$@"

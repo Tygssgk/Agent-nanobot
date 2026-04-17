@@ -1,0 +1,131 @@
+# litellm_config.yaml
+# Load Balancing & Fallback Configuration untuk Google AI Studio
+
+model_list:
+  # ============================================
+  # GROUP 1: Gemini 2.5 Flash (3 API Keys)
+  # ============================================
+  - model_name: gemini-flash          # nama alias (yang dipanggil nanobot)
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-05-20
+      api_key: os.environ/GOOGLE_API_KEY_FLASH_1
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      rpm: 15                          # rate limit per menit
+      tpm: 1000000                     # token per menit
+      timeout: 120
+    model_info:
+      id: "flash-key-1"
+
+  - model_name: gemini-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-05-20
+      api_key: os.environ/GOOGLE_API_KEY_FLASH_2
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      rpm: 15
+      tpm: 1000000
+      timeout: 120
+    model_info:
+      id: "flash-key-2"
+
+  - model_name: gemini-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-05-20
+      api_key: os.environ/GOOGLE_API_KEY_FLASH_3
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      rpm: 15
+      tpm: 1000000
+      timeout: 120
+    model_info:
+      id: "flash-key-3"
+
+  # ============================================
+  # GROUP 2: Gemini Pro (2 API Keys)
+  # ============================================
+  - model_name: gemini-pro             # nama alias
+    litellm_params:
+      model: gemini/gemini-2.5-pro-preview-05-06
+      api_key: os.environ/GOOGLE_API_KEY_PRO_1
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      rpm: 5
+      tpm: 1000000
+      timeout: 180
+    model_info:
+      id: "pro-key-1"
+
+  - model_name: gemini-pro
+    litellm_params:
+      model: gemini/gemini-2.5-pro-preview-05-06
+      api_key: os.environ/GOOGLE_API_KEY_PRO_2
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      rpm: 5
+      tpm: 1000000
+      timeout: 180
+    model_info:
+      id: "pro-key-2"
+
+  # ============================================
+  # FALLBACK MODEL: Jika Pro gagal, fallback ke Flash
+  # ============================================
+  - model_name: gemini-auto
+    litellm_params:
+      model: gemini/gemini-2.5-pro-preview-05-06
+      api_key: os.environ/GOOGLE_API_KEY_PRO_1
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      rpm: 5
+      timeout: 180
+    model_info:
+      id: "auto-pro"
+
+  - model_name: gemini-auto-fallback
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-05-20
+      api_key: os.environ/GOOGLE_API_KEY_FLASH_1
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      rpm: 15
+      timeout: 120
+    model_info:
+      id: "auto-flash-fallback"
+
+# ============================================
+# ROUTING & LOAD BALANCING STRATEGY
+# ============================================
+router_settings:
+  routing_strategy: "least-busy"       # Opsi: simple-shuffle, least-busy, latency-based-routing, cost-based-routing
+  num_retries: 3                       # Retry 3 kali sebelum gagal
+  retry_after: 5                       # Tunggu 5 detik sebelum retry
+  timeout: 120                         # Global timeout
+  allowed_fails: 2                     # Max fail sebelum key dianggap down
+  cooldown_time: 60                    # Cooldown 60 detik untuk key yang fail
+  enable_pre_call_checks: true         # Cek sebelum panggil API
+  
+  # Fallback configuration
+  fallbacks:
+    - gemini-pro: ["gemini-flash"]     # Jika Pro gagal, fallback ke Flash
+    - gemini-auto: ["gemini-auto-fallback"]
+  
+  # Context window fallback (jika input terlalu besar)
+  context_window_fallbacks:
+    - gemini-pro: ["gemini-flash"]
+
+# ============================================
+# GENERAL SETTINGS
+# ============================================
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL     # Opsional - untuk logging
+  
+litellm_settings:
+  drop_params: true                    # Drop parameter yang tidak didukung
+  set_verbose: false                   # Set true untuk debugging
+  cache: true                          # Enable caching
+  cache_params:
+    type: "local"                      # local cache (di Railway cukup local)
+    ttl: 600                           # Cache 10 menit
+  
+  # Rate limiting
+  max_budget: 0                        # 0 = unlimited (free tier)
+  budget_duration: "30d"
+  
+  # Logging
+  success_callback: ["langfuse"]       # Opsional - untuk monitoring
+  failure_callback: ["langfuse"]
